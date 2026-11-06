@@ -1,6 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "installCommand": "npm install && npm --prefix backend install",
+  "installCommand": "npm install && npm --prefix career-compass/backend install",
   "rewrites": [
     {
       "source": "/api/:path*",

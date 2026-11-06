@@ -1,5 +1,5 @@
-import { createApp } from '../backend/src/app.js'
-import { databaseConfigured, initializeDatabase } from '../backend/src/database.js'
+import { createApp } from '../career-compass/backend/src/app.js'
+import { databaseConfigured, initializeDatabase } from '../career-compass/backend/src/database.js'
 
 const app = createApp()
 let databaseInitialization
