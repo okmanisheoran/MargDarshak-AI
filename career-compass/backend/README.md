@@ -1,4 +1,4 @@
-# Career Compass API
+# MargDarshak-AI API
 
 The Express API validates assessment answers and sends them to Gemini from the server. Keep `GEMINI_API_KEY` in this directory's `.env`; never add it to the React app or a `VITE_` variable.
 
@@ -18,20 +18,20 @@ Add your Gemini API key to `backend/.env`, then run:
 npm run dev
 ```
 
-The default model is `gemini-3.5-flash`; override it with `GEMINI_MODEL` only if that model is available to your API key. The API listens on `http://localhost:3001`. In another terminal, run the React app from `career-compass` with `npm run dev`. Vite proxies `/api` requests to this backend.
+The default model is `gemini-3.5-flash`; override it with `GEMINI_MODEL` only if that model is available to your API key. The API listens on `http://localhost:3001`. In another terminal at the repository root, run `npm run dev` for the React app. Vite proxies `/api` requests to this backend.
 
 Run backend tests with `npm test`; run a production server with `npm start`.
 
 ## Deploy on Vercel
 
-The Vercel project root directory should be `career-compass`. Its `vercel.json` installs both frontend and backend dependencies, sends `/api/*` requests to the Express function in `api/index.js`, and leaves the Vite frontend build intact.
+The Vercel project root directory should be the repository root (`.`). The root `vercel.json` installs frontend and backend dependencies and sends `/api/*` requests to the Express function in `api/index.js`. Backend source and its package manifest remain under `career-compass/backend`.
 
 Add these values in the Vercel project's Environment Variables settings; do not commit them:
 
 - `GEMINI_API_KEY`: server-side Gemini key.
 - `DATABASE_URL`: hosted PostgreSQL connection string.
 - `GOOGLE_CLIENT_ID`: optional Google OAuth web client ID.
-- `APP_ORIGINS`: comma-separated allowed origins, including `https://margdarshak-ai.vercel.app` and any custom domain.
+- `APP_ORIGINS`: comma-separated allowed origins, including the production Vercel domain and any custom domain.
 
 Vercel automatically enables secure session cookies. Redeploy after changing environment variables.
 
