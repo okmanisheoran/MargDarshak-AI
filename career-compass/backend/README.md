@@ -22,6 +22,19 @@ The default model is `gemini-3.5-flash`; override it with `GEMINI_MODEL` only if
 
 Run backend tests with `npm test`; run a production server with `npm start`.
 
+## Deploy on Vercel
+
+The Vercel project root directory should be `career-compass`. Its `vercel.json` installs both frontend and backend dependencies, sends `/api/*` requests to the Express function in `api/index.js`, and leaves the Vite frontend build intact.
+
+Add these values in the Vercel project's Environment Variables settings; do not commit them:
+
+- `GEMINI_API_KEY`: server-side Gemini key.
+- `DATABASE_URL`: hosted PostgreSQL connection string.
+- `GOOGLE_CLIENT_ID`: optional Google OAuth web client ID.
+- `APP_ORIGINS`: comma-separated allowed origins, including `https://margdarshak-ai.vercel.app` and any custom domain.
+
+Vercel automatically enables secure session cookies. Redeploy after changing environment variables.
+
 ## Endpoint
 
 `POST /api/analyze-career` accepts `educationLevel`, `studyArea`, `interests`, `strengths`, and `workPriority`, using the choices in the assessment form. `careerPathCount` defaults to five and can be set from five to ten; the response contains exactly that many career cards. It returns:
