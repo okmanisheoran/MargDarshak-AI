@@ -147,6 +147,7 @@ before(async () => {
   }
   const app = createApp({
     repository,
+    analysisConfigured: true,
     analyzeCareer: async (assessment) => {
       receivedAssessment = assessment
       if (analysisFailure) throw analysisFailure
@@ -176,7 +177,33 @@ after(async () => {
 test('health endpoint responds successfully', async () => {
   const response = await fetch(`${baseUrl}/api/health`)
   assert.equal(response.status, 200)
-  assert.deepEqual(await response.json(), { status: 'ok' })
+  assert.deepEqual(await response.json(), {
+    status: 'ok',
+    services: { accountStorage: 'configured', careerAnalysis: 'configured' },
+    missingConfiguration: [],
+  })
+})
+
+test('health endpoint identifies missing production configuration', async () => {
+  const unavailableApp = createApp({
+    repository: { isConfigured: () => false },
+    analysisConfigured: false,
+  })
+  const unavailableServer = unavailableApp.listen(0)
+  await new Promise((resolve) => unavailableServer.once('listening', resolve))
+  try {
+    const response = await fetch(`http://127.0.0.1:${unavailableServer.address().port}/api/health`)
+    assert.equal(response.status, 503)
+    assert.deepEqual(await response.json(), {
+      status: 'degraded',
+      services: { accountStorage: 'missing', careerAnalysis: 'missing' },
+      missingConfiguration: ['DATABASE_URL', 'GEMINI_API_KEY'],
+    })
+  } finally {
+    await new Promise((resolve, reject) => {
+      unavailableServer.close((error) => (error ? reject(error) : resolve()))
+    })
+  }
 })
 
 test('account service explains when storage is not configured', async () => {
@@ -499,6 +526,25 @@ test('Gemini failures return a safe upstream error', async () => {
   const body = await response.json()
   assert.equal(body.error, 'CAREER_ANALYSIS_FAILED')
   assert.equal(body.message.includes('provider detail'), false)
+})
+
+test('invalid Gemini JSON returns a clear response-format error', async () => {
+  analysisFailure = new UpstreamServiceError('provider detail must not be sent to clients', {
+    cause: new SyntaxError('Unexpected token in private model output'),
+  })
+  const response = await fetch(`${baseUrl}/api/analyze-career`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', ...authenticatedHeaders },
+    body: JSON.stringify(sampleAssessment),
+  })
+  analysisFailure = null
+
+  assert.equal(response.status, 502)
+  const body = await response.json()
+  assert.equal(body.error, 'INVALID_GEMINI_RESPONSE')
+  assert.match(body.message, /not valid JSON/)
+  assert.equal(body.message.includes('Unexpected token'), false)
+  assert.equal(body.message.includes('private model output'), false)
 })
 
 test('Gemini rate limits return an actionable safe error', async () => {

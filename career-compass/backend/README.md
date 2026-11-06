@@ -35,6 +35,8 @@ Add these values in the Vercel project's Environment Variables settings; do not 
 
 Vercel automatically enables secure session cookies. Redeploy after changing environment variables.
 
+Check `/api/health` after deployment. It reports whether `DATABASE_URL` and `GEMINI_API_KEY` are configured without returning their values; missing settings produce HTTP 503 with a `missingConfiguration` list.
+
 ## Endpoint
 
 `POST /api/analyze-career` accepts `educationLevel`, `studyArea`, `interests`, `strengths`, and `workPriority`, using the choices in the assessment form. `careerPathCount` defaults to five and can be set from five to ten; the response contains exactly that many career cards. It returns:

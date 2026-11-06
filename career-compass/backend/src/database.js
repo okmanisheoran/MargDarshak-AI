@@ -6,8 +6,11 @@ const { Pool } = pg
 let pool
 
 export class StorageUnavailableError extends Error {
-  constructor(message = 'Account storage needs a PostgreSQL DATABASE_URL. Add your hosted database connection string to backend/.env and restart the backend; a Google client ID does not replace this database setting.') {
-    super(message)
+  constructor(message) {
+    const defaultMessage = process.env.VERCEL === '1'
+      ? 'Account storage needs a PostgreSQL DATABASE_URL. Add the hosted database connection string to the Vercel project environment variables, then redeploy; a Google client ID does not replace this database setting.'
+      : 'Account storage needs a PostgreSQL DATABASE_URL. Add your hosted database connection string to backend/.env and restart the backend; a Google client ID does not replace this database setting.'
+    super(message ?? defaultMessage)
     this.name = 'StorageUnavailableError'
   }
 }

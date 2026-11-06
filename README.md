@@ -144,7 +144,7 @@ Connect this GitHub repository to Vercel and use the following project settings.
 
 Environment variables are not uploaded from local `.env` files. Redeploy after changing them. Add the deployed domain to the authorized JavaScript origins in Google Cloud if using Google sign-in.
 
-After deployment, check `https://<your-domain>/api/health`; a healthy API returns `{"status":"ok"}`. If the root page or health route does not match this project, check that Vercel is connected to this repository, the production branch is `main`, and Root Directory is `.`.
+After deployment, check `https://<your-domain>/api/health`. A ready API returns `{"status":"ok","services":{"accountStorage":"configured","careerAnalysis":"configured"},"missingConfiguration":[]}`. If required environment variables are absent, it returns HTTP 503 with `status:"degraded"` and names the missing variable without exposing its value.
 
 ## API overview
 

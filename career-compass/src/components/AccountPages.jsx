@@ -1,27 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { requestJson } from '../api.js'
 
 const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID
 
 async function postJson(url, payload) {
-  const response = await fetch(url, {
+  return requestJson(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
-  })
-  const responseText = await response.text()
-  let result
-  try {
-    result = responseText ? JSON.parse(responseText) : null
-  } catch {
-    result = null
-  }
-  if (!response.ok) {
-    throw new Error(result?.message || `The account service returned HTTP ${response.status}. Check that the backend is running and configured.`)
-  }
-  if (!result || typeof result !== 'object' || Array.isArray(result)) {
-    throw new Error('The account service returned an empty or invalid response. Check the backend status and try again.')
-  }
-  return result
+  }, 'Account service')
 }
 
 function GoogleSignInButton({ onCredential, disabled }) {
@@ -228,12 +215,8 @@ export function ProgressPage({ analysis, navigate }) {
 
   useEffect(() => {
     let active = true
-    fetch('/api/progress')
-      .then(async (response) => {
-        const result = await response.json()
-        if (!response.ok) throw new Error(result.message || 'Progress could not be loaded.')
-        return result.months
-      })
+    requestJson('/api/progress', undefined, 'Progress service')
+      .then((result) => result.months)
       .then((result) => {
         if (!active) return
         setMonths(result)
@@ -252,13 +235,11 @@ export function ProgressPage({ analysis, navigate }) {
     if (!current) return
     setErrorMessage('')
     try {
-      const response = await fetch(`/api/progress/${month}`, {
+      await requestJson(`/api/progress/${month}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ completed: !current.completed }),
-      })
-      const result = await response.json()
-      if (!response.ok) throw new Error(result.message || 'Progress could not be saved.')
+      }, 'Progress service')
       setMonths((previous) => previous.map((item) => item.month === month ? { ...item, completed: !current.completed } : item))
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : 'Progress could not be saved.')
