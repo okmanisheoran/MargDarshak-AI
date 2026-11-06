@@ -1,5 +1,5 @@
 import express from 'express'
-import { allowedOrigins } from './config/env.js'
+import { allowedOrigins, geminiApiKey } from './config/env.js'
 import {
   assertStorageConfigured,
   clearSessionCookie,
@@ -36,7 +36,11 @@ function requireAuthenticatedUser(user) {
   return user
 }
 
-export function createApp({ analyzeCareer = generateCareerAnalysis, repository = accountRepository } = {}) {
+export function createApp({
+  analyzeCareer = generateCareerAnalysis,
+  repository = accountRepository,
+  analysisConfigured = Boolean(geminiApiKey),
+} = {}) {
   const app = express()
 
   app.use(express.json({ limit: '16kb' }))
@@ -49,7 +53,20 @@ export function createApp({ analyzeCareer = generateCareerAnalysis, repository =
   })
 
   app.get('/api/health', (_request, response) => {
-    response.json({ status: 'ok' })
+    const services = {
+      accountStorage: repository.isConfigured() ? 'configured' : 'missing',
+      careerAnalysis: analysisConfigured ? 'configured' : 'missing',
+    }
+    const missingConfiguration = [
+      ...(services.accountStorage === 'missing' ? ['DATABASE_URL'] : []),
+      ...(services.careerAnalysis === 'missing' ? ['GEMINI_API_KEY'] : []),
+    ]
+    const ready = missingConfiguration.length === 0
+    response.status(ready ? 200 : 503).json({
+      status: ready ? 'ok' : 'degraded',
+      services,
+      missingConfiguration,
+    })
   })
 
   app.get('/api/auth/session', async (request, response) => {
@@ -241,6 +258,14 @@ export function createApp({ analyzeCareer = generateCareerAnalysis, repository =
 
     console.error('Career analysis request failed:', error.name ?? 'Error')
     if (error instanceof UpstreamServiceError) {
+      if (error.cause instanceof SyntaxError) {
+        response.status(502).json({
+          error: 'INVALID_GEMINI_RESPONSE',
+          message: 'Gemini returned a response that was not valid JSON. Please retry; if it continues, check the configured Gemini model and response format.',
+        })
+        return
+      }
+
       if (error.cause?.status === 429) {
         response.status(429).json({
           error: 'GEMINI_RATE_LIMITED',

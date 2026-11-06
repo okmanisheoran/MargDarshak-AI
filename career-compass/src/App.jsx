@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import CareerResultsDashboard from './components/CareerResultsDashboard.jsx'
 import { AuthPage, FeedbackPage, LandingSections, ProgressPage } from './components/AccountPages.jsx'
+import { requestJson } from './api.js'
 import './App.css'
 
 const iconPaths = {
@@ -684,20 +685,11 @@ function Assessment({ assessment, setAssessment }) {
     requestInProgress.current = true
     setAssessment((previous) => ({ ...previous, status: 'loading', errors: {}, apiError: '' }))
     try {
-      const response = await fetch('/api/analyze-career', {
+      const result = await requestJson('/api/analyze-career', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(form),
-      })
-      let result
-      try {
-        result = await response.json()
-      } catch {
-        throw new Error('The server returned an unreadable response. Please retry.')
-      }
-      if (!response.ok) {
-        throw new Error(typeof result?.message === 'string' ? result.message : 'Career analysis could not be completed.')
-      }
+      }, 'Career analysis service')
       if (!result || !isCareerAnalysis(result.analysis, form.careerPathCount)) {
         throw new Error('The server returned an invalid career analysis. Please try again.')
       }
@@ -816,18 +808,14 @@ function App() {
     let active = true
     const restorePrivateWorkspace = async () => {
       try {
-        const sessionResponse = await fetch('/api/auth/session')
-        const session = await sessionResponse.json()
-        if (!sessionResponse.ok) throw new Error(session.message || 'Account service is unavailable.')
+        const session = await requestJson('/api/auth/session', undefined, 'Account service')
         if (!active) return
         if (!session.authenticated) {
           setAuthStatus('guest')
           return
         }
         setAuthStatus('authenticated')
-        const latestResponse = await fetch('/api/assessments/latest')
-        const latest = await latestResponse.json()
-        if (!latestResponse.ok) throw new Error(latest.message || 'Saved assessment could not be loaded.')
+        const latest = await requestJson('/api/assessments/latest', undefined, 'Saved assessment service')
         if (!active) return
         if (latest.assessment && isCareerAnalysis(latest.assessment.analysis)) {
           setAssessment((previous) => ({
@@ -869,9 +857,8 @@ function App() {
     setAuthStatus('authenticated')
     setStorageMessage('')
     try {
-      const response = await fetch('/api/assessments/latest')
-      const result = await response.json()
-      if (response.ok && result.assessment && isCareerAnalysis(result.assessment.analysis)) {
+      const result = await requestJson('/api/assessments/latest', undefined, 'Saved assessment service')
+      if (result.assessment && isCareerAnalysis(result.assessment.analysis)) {
         setAssessment((previous) => ({
           ...previous,
           analysis: result.assessment.analysis,
@@ -887,9 +874,7 @@ function App() {
 
   const logout = async ({ switchAccount = false } = {}) => {
     try {
-      const response = await fetch('/api/auth/logout', { method: 'POST' })
-      const result = await response.json()
-      if (!response.ok) throw new Error(result.message || 'Sign out could not be completed.')
+      await requestJson('/api/auth/logout', { method: 'POST' }, 'Account service')
       setAuthStatus('guest')
       setAssessment(createEmptyAssessment())
       setStorageMessage('')
