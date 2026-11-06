@@ -5,11 +5,16 @@ export const geminiApiKey = process.env.GEMINI_API_KEY
 export const geminiModel = process.env.GEMINI_MODEL ?? 'gemini-3.5-flash'
 export const databaseUrl = process.env.DATABASE_URL
 export const googleClientId = process.env.GOOGLE_CLIENT_ID
-export const sessionCookieSecure = process.env.SESSION_COOKIE_SECURE === 'true'
-export const allowedOrigins = (process.env.APP_ORIGINS ?? 'http://127.0.0.1:5173,http://localhost:5173')
+export const sessionCookieSecure = process.env.SESSION_COOKIE_SECURE === 'true' || process.env.VERCEL === '1'
+const configuredOrigins = (process.env.APP_ORIGINS ?? 'http://127.0.0.1:5173,http://localhost:5173')
   .split(',')
   .map((origin) => origin.trim())
   .filter(Boolean)
+const vercelOrigins = ['VERCEL_PROJECT_PRODUCTION_URL', 'VERCEL_URL', 'VERCEL_BRANCH_URL']
+  .map((name) => process.env[name])
+  .filter(Boolean)
+  .map((host) => `https://${host}`)
+export const allowedOrigins = [...new Set([...configuredOrigins, ...vercelOrigins])]
 
 export function assertRequiredEnvironment() {
   if (!geminiApiKey) {
