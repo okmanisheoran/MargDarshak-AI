@@ -1,0 +1,42 @@
+# Career Compass API
+
+The Express API validates assessment answers and sends them to Gemini from the server. Keep `GEMINI_API_KEY` in this directory's `.env`; never add it to the React app or a `VITE_` variable.
+
+## Run locally
+
+Requires Node.js 20 or newer.
+
+```powershell
+cd career-compass\backend
+npm install
+Copy-Item .env.example .env
+```
+
+Add your Gemini API key to `backend/.env`, then run:
+
+```powershell
+npm run dev
+```
+
+The default model is `gemini-3.5-flash`; override it with `GEMINI_MODEL` only if that model is available to your API key. The API listens on `http://localhost:3001`. In another terminal, run the React app from `career-compass` with `npm run dev`. Vite proxies `/api` requests to this backend.
+
+Run backend tests with `npm test`; run a production server with `npm start`.
+
+## Endpoint
+
+`POST /api/analyze-career` accepts `educationLevel`, `studyArea`, `interests`, `strengths`, and `workPriority`, using the choices in the assessment form. `careerPathCount` defaults to five and can be set from five to ten; the response contains exactly that many career cards. It returns:
+
+```json
+{
+  "analysis": {
+    "summary": "…",
+    "careerSuggestions": ["five or more structured career suggestions, matching careerPathCount"],
+    "sixMonthRoadmap": ["exactly six sequential monthly plans"],
+    "beginnerProjects": ["exactly three practical projects"]
+  }
+}
+```
+
+See [AI_CAREER_ANALYSIS.md](./AI_CAREER_ANALYSIS.md) for the full system instruction, JSON Schema, complete sample response, and frontend display guidance.
+
+Invalid answers return HTTP 400 with field details. Gemini failures return HTTP 502, and unexpected server errors return HTTP 500; neither response exposes provider details or credentials. `GET /api/health` is available for a basic health check.
